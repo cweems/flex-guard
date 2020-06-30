@@ -1,16 +1,10 @@
 # Flex Guard
 
-Make secure requests to Twilio Functions from Flex by validating agent tokens.
+Flex Guard provides a simple API for handling authorization of requests between an agent and Twilio Functions (or other back-end system). Flex Guard checks for a valid agent token, and can also check if the agent certain required roles.
 
-## What it Does
-
-If your Twilio Flex contact center interface needs to make HTTP requests to a back-end, you'll likely want to check if the request is authorized.
-
-Flex Guard validates your Flex agent's access token before running your Twilio function or self-hosted code. If the agent is unauthorized, it will return automatically return a `401 - Unauthorized` response.
+Flex Guard returns `true` if the request is allowed and `false` if it is not. It will also optionally return automatically return a `401 - Unauthorized` response.
 
 ## Sample Usage
-
-To use Flex Guard, you'll need to make changes to your back-end controller (e.g Twilio Function) as well as your Flex Plugin.
 
 ### Back-End
 
@@ -61,7 +55,7 @@ export default class MyComponent extends React.Component {
 
 ## Options
 
-**rejectResponse**
+**rejectRequest**
 |Type: `true|false`|Default: `true`|Optional|
 |---|---|---|
 
@@ -72,17 +66,19 @@ Uses `Twilio.Response()` to send back a `401` response to your client. Set to `f
 Example:
 
 ```javascript
-gard(context, event, callback, options, { rejectResponse: false });
+guard(context, event, callback, options, { rejectRequest: false });
 ```
 
 **allowedRoles**
 |Type: `array`|Default: `undefined`|Optional|
 |---|---|---|
 
-Checks if the agent (TaskRouter worker) has any of the roles contained in the supplied array. By default, `flex-guard` will return a `403 - Forbidden` response unless `rejectResponse` is set to `false`.
+Checks if the agent (TaskRouter worker) has any of the roles contained in the supplied array. By default, `flex-guard` will return a `403 - Forbidden` response unless `rejectRequest` is set to `false`.
 
 Example:
 
 ```javascript
-gard(context, event, callback, options, { allowedRoles: ["supervisor"] });
+guard(context, event, callback, options, {
+    allowedRoles: ["supervisor", "admin"],
+});
 ```

@@ -1,31 +1,35 @@
 {
-  "name": "flex-guard",
-  "version": "1.0.0",
-  "description": "Make secure requests to Twilio Functions from Flex by validating agent tokens.",
-  "main": "index.js",
-  "scripts": {
-    "test": "test"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/cweems/flex-guard.git"
-  },
-  "keywords": [
-    "twilio",
-    "flex",
-    "validation",
-    "twilio",
-    "functions",
-    "serverless"
-  ],
-  "author": "Charlie Weems",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/cweems/flex-guard/issues"
-  },
-  "homepage": "https://github.com/cweems/flex-guard#readme",
-  "dependencies": {
-    "js-base64": "^2.6.2",
-    "node-fetch": "^2.6.0"
-  }
+    "name": "flex-guard",
+    "version": "1.0.0",
+    "description": "Make secure requests to Twilio Functions from Flex by validating agent tokens.",
+    "main": "index.js",
+    "scripts": {
+        "test": "mocha"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/cweems/flex-guard.git"
+    },
+    "keywords": [
+        "twilio",
+        "flex",
+        "validation",
+        "twilio",
+        "functions",
+        "serverless"
+    ],
+    "author": "Charlie Weems",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/cweems/flex-guard/issues"
+    },
+    "homepage": "https://github.com/cweems/flex-guard#readme",
+    "dependencies": {
+        "js-base64": "^2.6.2",
+        "node-fetch": "^2.6.0"
+    },
+    "devDependencies": {
+        "mocha": "^8.0.1",
+        "sinon": "^9.0.2"
+    }
 }

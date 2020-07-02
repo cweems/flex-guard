@@ -4,18 +4,24 @@ Flex Guard provides a simple API for handling authorization of requests between 
 
 Flex Guard returns `true` if the request is allowed and `false` if it is not. It will also optionally return automatically return a `401 - Unauthorized` response.
 
-## Sample Usage
+## Use Cases
+
+-   You want to allow a contact center agent to click a button that sends an email to the customer. Flex guard will check to see if the user initiating the API call to send the email has a valid token.
+
+-   When an agent's task loads, you want to pull data from a customer data platform. Flex Guard will check to see that they have a valid token before returning a response to the API call.
+
+-   You want to allow certain agents to perform sensitive tasks like update PII. Flex Guard will check if they have the required role.
 
 ### Back-End
 
 Twilio function:
 
 ```javascript
-let guard = require("flex-guard");
+let Guard = require("flex-guard");
 
 exports.handler = async function (context, event, callback) {
     const guard = new Guard(context, event, callback);
-    const allowed = await guard.allow();
+    const allowed = await guard.allowed();
     // => true || false
 };
 ```
@@ -23,7 +29,7 @@ exports.handler = async function (context, event, callback) {
 Node.js / Express app:
 
 ```javascript
-let guard = require("flex-guard");
+let Guard = require("flex-guard");
 // Other dependencies...
 
 router.post('/flex-request', jsonParser, function (req, res) {
@@ -36,7 +42,7 @@ router.post('/flex-request', jsonParser, function (req, res) {
     event = req.body;
 
     const guard = new Guard(context, event, callback);
-    const allowed = await guard.allow();
+    const allowed = await guard.allowed();
     // => true || false
 })
 
@@ -119,10 +125,6 @@ The `event` object should have a property called `token` with the agent's token 
 
 For use inside a Twilio Function. If provided, `flex-guard` will automatically send a `401 - Unauthorized` response back using the parent function's `callback` method. If set to null, `flex-guard` will simply return `true | false`, giving you the ability to customize your response.
 
-**options**
-|Type: `object`|Optional|
-|---|---|
-
 **allowedRoles**
 |Type: `array`|Optional|
 |---|---|
@@ -132,5 +134,5 @@ Checks if the agent (TaskRouter worker) has any of the roles contained in the su
 Example:
 
 ```javascript
-guard(context, event, callback, options, ["supervisor", "admin"]);
+guard(context, event, callback, ["supervisor", "admin"]);
 ```

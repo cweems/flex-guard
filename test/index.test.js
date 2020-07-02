@@ -33,14 +33,14 @@ describe("Guard", function () {
     describe("#allow", function () {
         it("allow method should be a function", function () {
             const guard = new Guard(context, event, callback);
-            assert.equal(typeof guard.allow, "function");
+            assert.equal(typeof guard.allowed, "function");
         });
 
         it("should throw an error if account SID is not correct", async function () {
             const guard = new Guard(context, event, callback);
             sinon.stub(guard, "validateToken").returns(invalidAccountResponse);
 
-            assert.equal(await guard.allow(), false);
+            assert.equal(await guard.allowed(), false);
         });
 
         it("should return false if token is invalid", async function () {
@@ -49,14 +49,14 @@ describe("Guard", function () {
                 .stub(guard, "validateToken")
                 .returns(invalidAccessTokenResponse);
 
-            assert.equal(await guard.allow(), false);
+            assert.equal(await guard.allowed(), false);
         });
 
         it("should return true if token is valid", async function () {
             const guard = new Guard(context, event, callback);
             sinon.stub(guard, "validateToken").returns(validTokenResponse);
 
-            assert.equal(await guard.allow(), true);
+            assert.equal(await guard.allowed(), true);
         });
 
         describe("#checkRole", function () {
@@ -69,7 +69,7 @@ describe("Guard", function () {
                     .stub(guard, "validateToken")
                     .returns(matchingRoleResponse);
 
-                assert.equal(await guard.allow(), true);
+                assert.equal(await guard.allowed(), true);
             });
 
             it("returns false if role is not included in list", async function () {
@@ -81,7 +81,7 @@ describe("Guard", function () {
                     .stub(guard, "validateToken")
                     .returns(noMatchingRoleResponse);
 
-                assert.equal(await guard.allow(), false);
+                assert.equal(await guard.allowed(), false);
             });
 
             it("calls #rejectRequest if callback is supplied and role is not included in list", async function () {
@@ -93,7 +93,7 @@ describe("Guard", function () {
                     .stub(guard, "validateToken")
                     .returns(noMatchingRoleResponse);
                 const rejectRequestSpy = sinon.spy(guard, "rejectRequest");
-                await guard.allow();
+                await guard.allowed();
                 assert.equal(rejectRequestSpy.called, true);
             });
 
@@ -106,7 +106,7 @@ describe("Guard", function () {
                     .stub(guard, "validateToken")
                     .returns(noMatchingRoleResponse);
                 const rejectRequestSpy = sinon.spy(guard, "rejectRequest");
-                await guard.allow();
+                await guard.allowed();
                 assert.equal(rejectRequestSpy.called, false);
             });
         });
@@ -120,7 +120,7 @@ describe("Guard", function () {
                     .returns(invalidAccessTokenResponse);
                 const rejectRequestSpy = sinon.spy(guard, "rejectRequest");
 
-                await guard.allow();
+                await guard.allowed();
 
                 assert.equal(rejectRequestSpy.called, true);
             });
@@ -134,7 +134,7 @@ describe("Guard", function () {
                     .returns(invalidAccessTokenResponse);
                 const rejectRequestSpy = sinon.spy(guard, "rejectRequest");
 
-                await guard.allow();
+                await guard.allowed();
 
                 assert.equal(rejectRequestSpy.called, false);
             });
@@ -148,7 +148,7 @@ describe("Guard", function () {
                     .returns(invalidAccessTokenResponse);
                 const rejectRequestSpy = sinon.spy(guard, "rejectRequest");
 
-                await guard.allow();
+                await guard.allowed();
 
                 assert.equal(rejectRequestSpy.called, false);
             });

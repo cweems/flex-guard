@@ -17,7 +17,7 @@ module.exports = class Guard {
         this.allowedRoles = allowedRoles;
     }
 
-    async allow() {
+    async allowed() {
         try {
             const tokenResponse = await this.validateToken();
             if (!tokenResponse.valid) {

@@ -32,11 +32,11 @@ Node.js / Express app:
 let Guard = require("flex-guard");
 // Other dependencies...
 
-router.post('/flex-request', jsonParser, function (req, res) {
+router.post("/flex-request", jsonParser, async function (req, res) {
     context = {
         ACCOUNT_SID: process.env.ACCOUNT_SID,
-        AUTH_TOKEN: process.env.AUTH_TOKEN
-    }
+        AUTH_TOKEN: process.env.AUTH_TOKEN,
+    };
 
     // Must include token property
     event = req.body;
@@ -44,8 +44,7 @@ router.post('/flex-request', jsonParser, function (req, res) {
     const guard = new Guard(context, event, callback);
     const allowed = await guard.allowed();
     // => true || false
-})
-
+});
 ```
 
 ### Front-End
@@ -63,21 +62,21 @@ Example:
 import { Manager } from "@twilio/flex-ui";
 
 export default class MyComponent extends React.Component {
-    componentDidMount() {
+    async fetchData() {
         // Get the agent's token from Manager
         const manager = Manager.getInstance();
         const token = manager.user.token;
 
-        fetch(`https://my-env-123.twil.io/my-function`, {
+        const response = await fetch(`https://my-env-123.twil.io/my-function`, {
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
             },
             method: "POST",
             // Include the token in the body of your request
-            body: `token=${token}&myCustomKey=${myCustomData}`,
-        }).then((response) => {
-            // Handle the response
+            body: `token=${token}`,
         });
+
+        // Handle the response
     }
 
     // Render your component, etc.

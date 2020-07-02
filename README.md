@@ -5,6 +5,8 @@
 
 `flex-guard` returns `true` if the request is allowed and `false` if it is not. It will also optionally return automatically return a `401 - Unauthorized` response.
 
+**Disclaimer: This is a personal project and is not supported by Twilio.**
+
 ## Use Cases
 
 -   You want to allow a contact center agent to click a button that sends an email to the customer. `flex-guard` will check to see if the user initiating the API call to send the email has a valid token.
@@ -23,7 +25,7 @@ You can also add `flex-guard` as a Twilio Functions dependency on the [functions
 
 ### Back-End
 
-Basic usage:
+**Basic usage:**
 
 ```javascript
 let Guard = require("flex-guard");
@@ -63,7 +65,7 @@ exports.handler = async function (context, event, callback) {
 
 ```javascript
 let Guard = require("flex-guard");
-// Other dependencies...
+// & Other dependencies...
 
 router.post("/flex-request", jsonParser, async function (req, res) {
     const guard = new Guard(process.env.ACCOUNT_SID, process.env.AUTH_TOKEN);
@@ -79,8 +81,6 @@ In your Flex Plugin, you'll need to include your agent's token in the body of yo
 1. Import `Manager` from `@twilio/flex-ui`
 1. Use `Manager` to get the agent's token
 1. Include `token` in the body of your request
-
-Example:
 
 ```javascript
 // Import Manager
@@ -108,6 +108,97 @@ export default class MyComponent extends React.Component {
 }
 ```
 
+## Examples
+
+**Send Email**
+Only allow an agent to send an email if their token is valid and they have the role `agent`:
+
+```javascript
+const Guard = require("flex-guard");
+const sgMail = require("@sendgrid/mail");
+
+exports.handler = async function (context, event, callback) {
+    const guard = new Guard(context.accountSid, context.authToken);
+
+    const token = event.token;
+    // or { token } = event;
+
+    let allowed = await guard.allowed(token, ["agent"], callback);
+
+    if (allowed) {
+        sgMail.setApiKey(context.SENDGRID_API_KEY);
+
+        const message = {
+            to: "myRecipient@trial.com",
+            from: "myEmail@trail.com",
+            subject: "My Subject",
+            text: "Your email text.",
+        };
+        sgMail
+            .send(message)
+            .then(() => {
+                const response = new Twilio.Response();
+                response.appendHeader("Access-Control-Allow-Origin", "*");
+                response.appendHeader(
+                    "Access-Control-Allow-Methods",
+                    "OPTIONS POST"
+                );
+                response.appendHeader("Content-Type", "application/json");
+                response.appendHeader(
+                    "Access-Control-Allow-Headers",
+                    "Content-Type"
+                );
+                callback(null, response);
+            })
+            .catch((err) => {
+                callback(err);
+            });
+    }
+};
+```
+
+**Start Twilio Studio Flow**
+Make an API call from your Flex front-end to start a Twilio Studio SMS survey:
+
+```javascript
+const Guard = require("flex-guard");
+
+exports.handler = async function (context, event, callback) {
+    const guard = new Guard(context.accountSid, context.authToken);
+
+    const token = event.token;
+    // or { token } = event;
+
+    let allowed = await guard.allowed(token, ["agent"], callback);
+
+    if (allowed) {
+        const response = new Twilio.Response();
+        response.appendHeader("Access-Control-Allow-Origin", "*");
+        response.appendHeader(
+            "Access-Control-Allow-Methods",
+            "OPTIONS POST GET"
+        );
+        response.appendHeader("Access-Control-Allow-Headers", "Content-Type");
+        response.appendHeader("Access-Control-Allow-Headers", "Content-Type");
+
+        client = context.getTwilioClient();
+
+        client.studio
+            .flows(context.SURVEY_FLOW_SID)
+            .executions.create({
+                to: event.toPhoneNumber,
+                from: "+14133233662",
+            })
+            .then((execution) => {
+                callback(null, response);
+            })
+            .catch((err) => {
+                callback(err);
+            });
+    }
+};
+```
+
 ## Reference
 
 ### Guard() `class`
@@ -125,6 +216,8 @@ Your Twilio Account SID.
 |---|---|
 
 Your Twilio Auth Token.
+
+#
 
 ### allowed() `method`
 
@@ -148,12 +241,12 @@ The token is a long character string that looks something like this:
 |Type: `array`|Optional|
 |---|---|
 
-Checks if the agent (TaskRouter worker) has any of the roles contained in the supplied array. By default, `flex-guard` will return a `403 - Forbidden` response unless `rejectRequest` is set to `false`.
+Checks if the agent's TaskRouter worker has **any** of the roles contained in the supplied array. By default, `flex-guard` will return a `403 - Forbidden` response unless `rejectRequest` is set to `false`.
 
 Example:
 
 ```javascript
-guard(context, event, callback, ["supervisor", "admin"]);
+guard.allowed(token, ["supervisor", "admin"], callback);
 ```
 
 **callback**

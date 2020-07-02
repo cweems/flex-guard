@@ -8,13 +8,38 @@ Flex Guard returns `true` if the request is allowed and `false` if it is not. It
 
 ### Back-End
 
+Twilio function:
+
 ```javascript
 let guard = require("flex-guard");
 
 exports.handler = async function (context, event, callback) {
-    const allowed = await guard.allow(context, event, callback);
+    const guard = new Guard(context, event, callback);
+    const allowed = await guard.allow();
     // => true || false
 };
+```
+
+Node.js / Express app:
+
+```javascript
+let guard = require("flex-guard");
+// Other dependencies...
+
+router.post('/flex-request', jsonParser, function (req, res) {
+    context = {
+        ACCOUNT_SID: process.env.ACCOUNT_SID,
+        AUTH_TOKEN: process.env.AUTH_TOKEN
+    }
+
+    // Must include token property
+    event = req.body;
+
+    const guard = new Guard(context, event, callback);
+    const allowed = await guard.allow();
+    // => true || false
+})
+
 ```
 
 ### Front-End
@@ -25,7 +50,7 @@ In your Flex Plugin, you'll need to include your agent's token with the key `tok
 1. Use `Manager` to get the agent's token
 1. Include `token` in the body of your request
 
-The following example shows loading data when the component mounts might look like:
+Example:
 
 ```javascript
 // Import Manager
@@ -64,6 +89,7 @@ export default class MyComponent extends React.Component {
 **context**
 |Type: `object`|Required|
 |---|---|
+
 The `context` object should contain your Account SID and Auth Token. If you are using Twilio Functions, simply check "Enable ACCOUNT_SID and AUTH_TOKEN" on the [Twilio Functions Configuration page]("https://www.twilio.com/console/functions/configure") and pass your function's `context` argument to `flex-guard`
 
 If you are using your own Node.js app, include your credentials in a context object like this:
@@ -99,7 +125,7 @@ For use inside a Twilio Function. If provided, `flex-guard` will automatically s
 
 **allowedRoles**
 |Type: `array`|Optional|
-|---|---|---|
+|---|---|
 
 Checks if the agent (TaskRouter worker) has any of the roles contained in the supplied array. By default, `flex-guard` will return a `403 - Forbidden` response unless `rejectRequest` is set to `false`.
 

@@ -2,25 +2,56 @@ const nodeFetch = require("node-fetch");
 const { Base64 } = require("js-base64");
 
 module.exports = class Guard {
-    constructor(context, event, callback, options) {
+    constructor(context, event, callback, allowedRoles) {
+        if (context === undefined) {
+            throw new Error("Context argument is required.");
+        }
+
+        if (event === undefined) {
+            throw new Error("Event argument is required.");
+        }
+
         this.context = context;
         this.event = event;
         this.callback = callback;
-        this.options = options;
+        this.allowedRoles = allowedRoles;
     }
 
     async allow() {
         try {
             const tokenResponse = await this.validateToken();
-            console.log(tokenResponse);
             if (!tokenResponse.valid) {
-                this.rejectRequest(tokenResponse.message);
+                if (this.callback) {
+                    this.rejectRequest(tokenResponse.message);
+                }
                 throw new Error(response);
+            }
+
+            if (this.allowedRoles) {
+                const roleValid = this.checkRole(tokenResponse.roles);
+                if (roleValid === false) {
+                    if (this.callback) {
+                        this.rejectRequest(tokenResponse.message);
+                    }
+                    throw new Error(response);
+                }
             }
             return true;
         } catch (err) {
             return false;
         }
+    }
+
+    checkRole(agentRoles) {
+        const validRoles = agentRoles.filter((ar) => {
+            return this.allowedRoles.includes(ar);
+        });
+
+        if (validRoles.length > 0) {
+            return true;
+        }
+
+        return false;
     }
 
     rejectRequest(message) {
@@ -32,7 +63,7 @@ module.exports = class Guard {
         response.setStatusCode(401);
         response.setBody({
             status: 401,
-            message: "Your authentication token failed validation",
+            message: "Authentication token failed validation",
             detail: message,
         });
 

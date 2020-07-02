@@ -1,55 +1,80 @@
-# Flex Guard
+<h1 align="center">flex-guard</h1>
+<p align="center">NPM package that validates requests from Twilio Flex's front-end to back-end services.
 
-Flex Guard provides a simple API for handling authorization of requests between an agent and Twilio Functions (or your own Node.js app). Flex Guard checks for a valid agent token, and can also check if the agent certain required roles.
+`flex-guard` provides a simple API for handling authorization of requests between an agent and Twilio Functions (or your own Node.js app). `flex-guard` checks for a valid agent token, and can also check if the agent certain required roles.
 
-Flex Guard returns `true` if the request is allowed and `false` if it is not. It will also optionally return automatically return a `401 - Unauthorized` response.
+`flex-guard` returns `true` if the request is allowed and `false` if it is not. It will also optionally return automatically return a `401 - Unauthorized` response.
 
 ## Use Cases
 
--   You want to allow a contact center agent to click a button that sends an email to the customer. Flex guard will check to see if the user initiating the API call to send the email has a valid token.
+-   You want to allow a contact center agent to click a button that sends an email to the customer. `flex-guard` will check to see if the user initiating the API call to send the email has a valid token.
 
--   When an agent's task loads, you want to pull data from a customer data platform. Flex Guard will check to see that they have a valid token before returning a response to the API call.
+-   When an agent's task loads, you want to pull data from a customer data platform. `flex-guard` will check to see that they have a valid token before returning a response to the API call.
 
--   You want to allow certain agents to perform sensitive tasks like update PII. Flex Guard will check if they have the required role.
+-   You want to allow certain agents to perform sensitive tasks like update PII. `flex-guard` will check if they have the required role.
+
+## Usage
+
+### Installation
+
+`$ npm install flex-guard`
+
+You can also add `flex-guard` as a Twilio Functions dependency on the [functions configuration page]('https://www.twilio.com/console/functions/configure').
 
 ### Back-End
 
-Twilio function:
+Basic usage:
+
+```javascript
+let Guard = require("flex-guard");
+
+const guard = new Guard(ACCOUNT_SID, AUTH_TOKEN);
+const allowed = await guard.allowed(token, ["supervisor", "admin"]);
+// => true || false
+```
+
+**Twilio Function:**
 
 ```javascript
 let Guard = require("flex-guard");
 
 exports.handler = async function (context, event, callback) {
-    const guard = new Guard(context, event, callback);
-    const allowed = await guard.allowed();
+    const guard = new Guard(context.ACCOUNT_SID, context.AUTH_TOKEN);
+
+    const allowed = await guard.allowed(token, ["supervisor", "admin"]);
     // => true || false
 };
 ```
 
-Node.js / Express app:
+Optionally, you can pass the `callback` argument of your function and `flex-guard` will automatically return a `401` response if the agent's token or role is invalid:
+
+```javascript
+exports.handler = async function (context, event, callback) {
+    const guard = new Guard(context.ACCOUNT_SID, context.AUTH_TOKEN);
+
+    const token = event.token;
+
+    const allowed = await guard.allowed(token, ["supervisor"], callback);
+    // => true || false + 401 Response using Twilio.Response();
+};
+```
+
+**Node.js / Express:**
 
 ```javascript
 let Guard = require("flex-guard");
 // Other dependencies...
 
 router.post("/flex-request", jsonParser, async function (req, res) {
-    context = {
-        ACCOUNT_SID: process.env.ACCOUNT_SID,
-        AUTH_TOKEN: process.env.AUTH_TOKEN,
-    };
-
-    // Must include token property
-    event = req.body;
-
-    const guard = new Guard(context, event, callback);
-    const allowed = await guard.allowed();
+    const guard = new Guard(process.env.ACCOUNT_SID, process.env.AUTH_TOKEN);
+    const allowed = await guard.allowed(req.body.token, ["supervisor"]);
     // => true || false
 });
 ```
 
 ### Front-End
 
-In your Flex Plugin, you'll need to include your agent's token with the key `token` in the body of your request:
+In your Flex Plugin, you'll need to include your agent's token in the body of your request:
 
 1. Import `Manager` from `@twilio/flex-ui`
 1. Use `Manager` to get the agent's token
@@ -85,44 +110,39 @@ export default class MyComponent extends React.Component {
 
 ## Reference
 
-### Guard()
+### Guard() `class`
 
 #### Arguments
 
-`allow` takes the same first three arguments that are passed to a Twilio function, plus an options object. While `flex-guard` is built primarily with Twilio functions in mind, you can also use it with your own Node.js app by including the required arguments when you initialize `Guard`.
-
-**context**
-|Type: `object`|Required|
+**accountSid**
+|Type: `string`|Required|
 |---|---|
 
-The `context` object should contain your Account SID and Auth Token. If you are using Twilio Functions, simply check "Enable ACCOUNT_SID and AUTH_TOKEN" on the [Twilio Functions Configuration page]("https://www.twilio.com/console/functions/configure") and pass your function's `context` argument to `flex-guard`
+Your Twilio Account SID.
 
-If you are using your own Node.js app, include your credentials in a context object like this:
+**authToken**
+|Type: `string`|Required|
+|---|---|
 
-```json
-{
-    "ACCOUNT_SID": "ACXXXXXXXXXXXXXXXXXXXXXXXXX",
-    "AUTH_TOKEN": "XXXXXXXXXXXXXXXXXXXXXXXXXXX"
-}
+Your Twilio Auth Token.
+
+### allowed() `method`
+
+**token**
+|Type: `string`|Required|
+|---|---|
+
+Your agent's token. You can retrieve it in your Flex Plugin like this:
+
+```javascript
+import { Manager } from "@twilio/flex-ui";
+
+const manager = Manager.getInstance();
+const token = manager.user.token;
 ```
 
-**event**
-|Type: `object`|Required|
-|---|---|
-
-The `event` object should have a property called `token` with the agent's token as the value. If you are using Twilio Functions, this object will include all parameters passed to your function as well. Example event object:
-
-```json
-{
-    "token": "eyJ6aXAiOiJERUYiLCJraWQ..."
-}
-```
-
-**callback**
-|Type: `function`|Optional|
-|---|---|
-
-For use inside a Twilio Function. If provided, `flex-guard` will automatically send a `401 - Unauthorized` response back using the parent function's `callback` method. If set to null, `flex-guard` will simply return `true | false`, giving you the ability to customize your response.
+The token is a long character string that looks something like this:
+`eyJ6aXAiOiJERUYiLCJraWQ...`
 
 **allowedRoles**
 |Type: `array`|Optional|
@@ -135,3 +155,9 @@ Example:
 ```javascript
 guard(context, event, callback, ["supervisor", "admin"]);
 ```
+
+**callback**
+|Type: `function`|Optional|
+|---|---|
+
+For use inside a Twilio Function. If provided, `flex-guard` will automatically send a `401 - Unauthorized` response back using the parent function's `callback` method. If undefined, `flex-guard` will simply return `true | false`, giving you the ability to customize your response.

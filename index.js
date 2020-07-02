@@ -2,35 +2,36 @@ const nodeFetch = require("node-fetch");
 const { Base64 } = require("js-base64");
 
 module.exports = class Guard {
-    constructor(context, event, callback, allowedRoles) {
-        if (context === undefined) {
+    constructor(accountSid, authToken) {
+        if (accountSid === undefined) {
             throw new Error("Context argument is required.");
         }
 
-        if (event === undefined) {
+        if (authToken === undefined) {
             throw new Error("Event argument is required.");
         }
 
-        this.context = context;
-        this.event = event;
-        this.callback = callback;
-        this.allowedRoles = allowedRoles;
+        this.accountSid = accountSid;
+        this.authToken = authToken;
     }
 
-    async allowed() {
+    async allowed(token, allowedRoles, callback) {
         try {
-            const tokenResponse = await this.validateToken();
+            const tokenResponse = await this.validateToken(token);
             if (!tokenResponse.valid) {
-                if (this.callback) {
+                if (callback) {
                     this.rejectRequest(tokenResponse.message);
                 }
                 throw new Error(response);
             }
 
-            if (this.allowedRoles) {
-                const roleValid = this.checkRole(tokenResponse.roles);
+            if (allowedRoles) {
+                const roleValid = this.checkRole(
+                    tokenResponse.roles,
+                    allowedRoles
+                );
                 if (roleValid === false) {
-                    if (this.callback) {
+                    if (callback) {
                         this.rejectRequest(tokenResponse.message);
                     }
                     throw new Error(response);
@@ -42,9 +43,9 @@ module.exports = class Guard {
         }
     }
 
-    checkRole(agentRoles) {
+    checkRole(agentRoles, allowedRoles) {
         const validRoles = agentRoles.filter((ar) => {
-            return this.allowedRoles.includes(ar);
+            return allowedRoles.includes(ar);
         });
 
         if (validRoles.length > 0) {
@@ -70,7 +71,7 @@ module.exports = class Guard {
         this.callback(null, response);
     }
 
-    async validateToken() {
+    async validateToken(token) {
         try {
             const { token } = this.event;
             const tokenValidationApi = `https://iam.twilio.com/v1/Accounts/${this.context.ACCOUNT_SID}/Tokens/validate`;
